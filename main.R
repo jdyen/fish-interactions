@@ -6,10 +6,6 @@
 #
 # Last updated: 23 April 2024
 
-# TODO:
-#   2. Re-run for coastal/upland systems (blackfish)
-#   3. Implement into pop models (decide on criteria for inclusion)
-
 # flags for slow steps
 reload_data <- FALSE
 sample_again <- FALSE
@@ -24,6 +20,7 @@ library(sf)
 library(brms)
 library(ggplot2)
 library(bayesplot)
+library(patchwork)
 
 # load helper scripts
 source("R/data.R")
@@ -107,8 +104,8 @@ if (sample_again) {
     ),
     data = cpue,
     family = negbinomial(),
-    chains = 3,
-    cores = 3,
+    chains = 4,
+    cores = 4,
     seed = stan_seed,
     iter = 3000, 
     warmup = 1000,
@@ -159,33 +156,20 @@ if (sample_again) {
     ylab("Count") +
     facet_wrap( ~ stat, scales = "free")
   
+  # combine into a single plot
+  hmc_diagnostics <- 
+    (pp_plot + theme(legend.position = "none")) /
+       (pp_max + scale_x_log10() + theme(legend.position = "none")) /
+    (pp_pzero_grouped + theme(legend.position = "none")) +
+    patchwork::plot_annotation(tag_levels = "a")
+  
   # save these
   ggsave(
-    filename = "outputs/figures/ppcheck.png",
-    plot = pp_plot + theme(legend.position = "none"),
+    filename = "outputs/figures/all-diagnostics.png",
+    plot = hmc_diagnostics,
     device = ragg::agg_png,
-    width = 6, 
-    height = 6,
-    units = "in",
-    dpi = 600,
-    bg = "white"
-  )
-  ggsave(
-    filename = "outputs/figures/ppmax.png",
-    plot = pp_max + scale_x_log10() + theme(legend.position = "none"),
-    device = ragg::agg_png,
-    width = 6, 
-    height = 6,
-    units = "in",
-    dpi = 600,
-    bg = "white"
-  )
-  ggsave(
-    filename = "outputs/figures/ppzero.png",
-    plot = pp_pzero_grouped + theme(legend.position = "none"),
-    device = ragg::agg_png,
-    width = 6, 
-    height = 6,
+    width = 8.5, 
+    height = 13,
     units = "in",
     dpi = 600,
     bg = "white"
@@ -417,23 +401,18 @@ corr_all_hier_plot <- cor_all$id_site |>
     legend.position = "bottom"
   )
 
+# combine the species and category plots into a single plot
+corr_sp_size_plot <- (corr_sp_hier_plot + theme(legend.position = "none")) /
+  corr_cat_hier_plot +
+  plot_annotation(tag_levels = "a")
+
 # save these to file
 ggsave(
-  filename = "outputs/figures/correlations-species.png",
-  plot = corr_sp_hier_plot,
+  filename = "outputs/figures/correlations-species-size.png",
+  plot = corr_sp_size_plot,
   device = ragg::agg_png,
-  width = 6, 
-  height = 6,
-  units = "in",
-  dpi = 600,
-  bg = "white"
-)
-ggsave(
-  filename = "outputs/figures/correlations-size.png",
-  plot = corr_cat_hier_plot,
-  device = ragg::agg_png,
-  width = 4.5, 
-  height = 4.5,
+  width = 8, 
+  height = 12,
   units = "in",
   dpi = 600,
   bg = "white"
